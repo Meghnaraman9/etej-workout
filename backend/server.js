@@ -7,7 +7,11 @@ const app = express();
 const PORT = 3001;
 const DATA_FILE = path.join(__dirname, 'progress.json');
 
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'DELETE'],
+  allowedHeaders: ['Content-Type']
+}));
 app.use(express.json());
 
 const workoutSchedule = {
