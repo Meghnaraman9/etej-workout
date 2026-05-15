@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ETEJ — Workout Schedule</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#E63946"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="ETEJ"/>
+<link rel="apple-touch-icon" href="icons/icon-180.png"/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0A0A0C;
+    --surface: #111115;
+    --surface2: #18181E;
+    --surface3: #1F1F27;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #F0EEF8;
+    --muted: #7B7A90;
+    --dim: #4A4960;
+    --accent: #E63946;
+    --accent2: #FF6B6B;
+    --gold: #FFD166;
+    --teal: #2EC4B6;
+    --week-bar: #E63946;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── NOISE TEXTURE ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,12,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 clamp(1rem, 4vw, 2.5rem);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(26px, 5vw, 36px);
+    letter-spacing: 4px;
+    color: var(--text);
+    user-select: none;
+  }
+  .logo span { color: var(--accent); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .week-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .week-selector span { color: var(--text); font-size: 15px; }
+  .week-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 2px;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .week-btn:hover { color: var(--text); }
+
+  .reset-btn {
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--dim);
+    padding: 6px 12px;
+    font-family: 'Barlow', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ─── HERO ─── */
+  .hero {
+    position: relative;
+    padding: clamp(2rem, 6vw, 4rem) clamp(1rem, 4vw, 2.5rem) clamp(1.5rem, 4vw, 2.5rem);
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(230,57,70,0.12);
+    border: 1px solid rgba(230,57,70,0.25);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent2);
+    width: fit-content;
+  }
+  .hero-tag::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 10vw, 96px);
+    line-height: 0.9;
+    letter-spacing: 2px;
+  }
+  .hero-title .line2 { color: var(--accent); }
+
+  .hero-subtitle {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(14px, 2.5vw, 18px);
+    font-weight: 300;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-wrap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .progress-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .progress-bar-outer {
+    flex: 1;
+    min-width: 120px;
+    height: 6px;
+    background: var(--surface3);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    border-radius: 100px;
+    width: 0%;
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+  .progress-count {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  /* ─── MAIN GRID ─── */
+  .schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 1px;
+    background: var(--border);
+    margin: 0 0 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── DAY CARD ─── */
+  .day-card {
+    background: var(--surface);
+    padding: clamp(1rem, 3vw, 1.5rem);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .day-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--day-color);
+    opacity: 0.8;
+  }
+  .day-card:hover { background: var(--surface2); }
+
+  .day-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .day-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 5vw, 38px);
+    letter-spacing: 2px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .day-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--day-color, var(--accent));
+    margin-top: 2px;
+  }
+  .day-icon {
+    font-size: 28px;
+    opacity: 0.7;
+  }
+  .day-progress-badge {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--day-color);
+    background: color-mix(in srgb, var(--day-color) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--day-color) 25%, transparent);
+    border-radius: 100px;
+    padding: 3px 10px;
+    white-space: nowrap;
+    align-self: flex-start;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ─── EXERCISE LIST ─── */
+  .exercise-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .exercise-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+    border-radius: 4px;
+    padding: 10px 8px;
+    margin: 0 -8px;
+  }
+  .exercise-item:last-child { border-bottom: none; }
+  .exercise-item:hover { background: rgba(255,255,255,0.03); }
+  .exercise-item.done .ex-name { text-decoration: line-through; color: var(--dim); }
+  .exercise-item.done .ex-meta { opacity: 0.4; }
+
+  .ex-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    background: transparent;
+  }
+  .exercise-item.done .ex-checkbox {
+    background: var(--day-color);
+    border-color: var(--day-color);
+  }
+  .ex-checkbox svg {
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .exercise-item.done .ex-checkbox svg {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .ex-info { flex: 1; min-width: 0; }
+  .ex-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    transition: color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ex-meta {
+    display: flex;
+    gap: 10px;
+    margin-top: 3px;
+    transition: opacity 0.2s;
+  }
+  .ex-stat {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+  .ex-stat b { color: var(--text); font-weight: 600; }
+  .ex-muscle {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--day-color);
+    background: color-mix(in srgb, var(--day-color) 10%, transparent);
+    border-radius: 3px;
+    padding: 1px 6px;
+    white-space: nowrap;
+    align-self: flex-start;
+    flex-shrink: 0;
+  }
+
+  /* ─── REST DAY ─── */
+  .rest-card .exercise-list .exercise-item {
+    opacity: 0.8;
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    position: relative;
+    z-index: 1;
+    padding: 2rem clamp(1rem, 4vw, 2.5rem);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .footer-brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 4px;
+    color: var(--dim);
+  }
+  .footer-brand span { color: var(--accent); opacity: 0.6; }
+  .footer-copy {
+    font-size: 12px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+
+  /* ─── TOAST ─── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 600px) {
+    .schedule-grid { grid-template-columns: 1fr; }
+    .hero-title { letter-spacing: 1px; }
+  }
+  @media (min-width: 1200px) {
+    .schedule-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 1600px) {
+    .schedule-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ET<span>E</span>J</div>
+  <div class="header-right">
+    <div class="week-selector">
+      <button class="week-btn" id="prevWeek">‹</button>
+      <span id="weekLabel">Week 1</span>
+      <button class="week-btn" id="nextWeek">›</button>
+    </div>
+    <button class="reset-btn" id="resetBtn">Reset</button>
+  </div>
+</header>
+
+<section class="hero" id="heroSection">
+  <div class="hero-tag">Men's Gym Program</div>
+  <div class="hero-title">
+    <div>7-DAY</div>
+    <div class="line2">WORKOUT</div>
+    <div>SCHEDULE</div>
+  </div>
+  <div class="hero-subtitle">Train Hard · Rest Smart · Stay Consistent</div>
+  <div class="progress-wrap">
+    <div class="progress-label">Week Progress</div>
+    <div class="progress-bar-outer">
+      <div class="progress-bar-inner" id="progressBar"></div>
+    </div>
+    <div class="progress-count" id="progressCount">0 / 0</div>
+  </div>
+</section>
+
+<main class="schedule-grid" id="scheduleGrid"></main>
+
+<footer>
+  <div class="footer-brand">ET<span>E</span>J</div>
+  <div class="footer-copy">Train. Earn. Evolve. Justify.</div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:3001/api';
+let schedule = {};
+let progress = {};
+let currentWeek = 1;
+
+const DAYS_ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+function getWeekKey() { return `week_${currentWeek}`; }
+
+function isChecked(day, exId) {
+  return !!(progress[getWeekKey()]?.[day]?.[exId]);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+async function fetchSchedule() {
+  try {
+    const r = await fetch(`${API}/schedule`);
+    schedule = await r.json();
+  } catch {
+    schedule = getFallbackSchedule();
+    showToast('⚠ Backend offline — using local mode');
+  }
+}
+
+async function fetchProgress() {
+  try {
+    const r = await fetch(`${API}/progress`);
+    progress = await r.json();
+  } catch {
+    const stored = localStorage.getItem('etej_progress');
+    progress = stored ? JSON.parse(stored) : {};
+  }
+}
+
+async function toggleExercise(day, exId) {
+  const week = getWeekKey();
+  if (!progress[week]) progress[week] = {};
+  if (!progress[week][day]) progress[week][day] = {};
+  const newVal = !progress[week][day][exId];
+  progress[week][day][exId] = newVal;
+
+  try {
+    await fetch(`${API}/progress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ week, day, exerciseId: exId, checked: newVal })
+    });
+  } catch {
+    localStorage.setItem('etej_progress', JSON.stringify(progress));
+  }
+  renderProgress();
+  updateDayBadge(day);
+}
+
+async function resetProgress() {
+  if (!confirm('Reset all progress for this week?')) return;
+  const week = getWeekKey();
+  try {
+    await fetch(`${API}/progress/reset`, { method: 'DELETE' });
+  } catch {}
+  progress[week] = {};
+  localStorage.setItem('etej_progress', JSON.stringify(progress));
+  renderAll();
+  showToast('✓ Week progress cleared');
+}
+
+function renderProgress() {
+  const week = getWeekKey();
+  let total = 0, done = 0;
+  for (const day of DAYS_ORDER) {
+    if (!schedule[day]) continue;
+    total += schedule[day].exercises.length;
+    for (const ex of schedule[day].exercises) {
+      if (isChecked(day, ex.id)) done++;
+    }
+  }
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressCount').textContent = `${done} / ${total}`;
+}
+
+function updateDayBadge(day) {
+  const dayData = schedule[day];
+  if (!dayData) return;
+  const total = dayData.exercises.length;
+  const done = dayData.exercises.filter(e => isChecked(day, e.id)).length;
+  const badge = document.getElementById(`badge_${day}`);
+  if (badge) badge.textContent = `${done}/${total}`;
+  const items = document.querySelectorAll(`[data-day="${day}"] .exercise-item`);
+  items.forEach(el => {
+    const exId = el.dataset.exid;
+    if (isChecked(day, exId)) el.classList.add('done');
+    else el.classList.remove('done');
+  });
+}
+
+function renderAll() {
+  const grid = document.getElementById('scheduleGrid');
+  grid.innerHTML = '';
+
+  for (const day of DAYS_ORDER) {
+    const d = schedule[day];
+    if (!d) continue;
+    const card = document.createElement('div');
+    card.className = 'day-card' + (d.isRest ? ' rest-card' : '');
+    card.style.setProperty('--day-color', d.color);
+    card.dataset.day = day;
+
+    const total = d.exercises.length;
+    const done = d.exercises.filter(e => isChecked(day, e.id)).length;
+
+    card.innerHTML = `
+      <div class="day-header">
+        <div>
+          <div class="day-name">${day.toUpperCase()}</div>
+          <div class="day-label">${d.label}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div class="day-icon">${d.icon}</div>
+          <div class="day-progress-badge" id="badge_${day}">${done}/${total}</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="exercise-list">
+        ${d.exercises.map(ex => `
+          <div class="exercise-item${isChecked(day, ex.id) ? ' done' : ''}"
+               data-day="${day}" data-exid="${ex.id}"
+               onclick="handleToggle('${day}','${ex.id}',this)">
+            <div class="ex-checkbox">
+              <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+                <path d="M1 5L4.5 8.5L11 1.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="ex-info">
+              <div class="ex-name">${ex.name}</div>
+              <div class="ex-meta">
+                <span class="ex-stat"><b>${ex.sets}</b> sets</span>
+                <span class="ex-stat"><b>${ex.reps}</b> reps</span>
+                <span class="ex-stat">Rest <b>${ex.rest}</b></span>
+              </div>
+            </div>
+            <div class="ex-muscle">${ex.muscle}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    grid.appendChild(card);
+  }
+  renderProgress();
+}
+
+function handleToggle(day, exId, el) {
+  el.classList.toggle('done');
+  toggleExercise(day, exId);
+}
+
+document.getElementById('prevWeek').onclick = () => {
+  if (currentWeek > 1) { currentWeek--; updateWeek(); }
+};
+document.getElementById('nextWeek').onclick = () => {
+  currentWeek++;
+  updateWeek();
+};
+document.getElementById('resetBtn').onclick = resetProgress;
+
+function updateWeek() {
+  document.getElementById('weekLabel').textContent = `Week ${currentWeek}`;
+  renderAll();
+}
+
+function getFallbackSchedule() {
+  return {
+    Monday: { label:'CHEST + TRICEPS', icon:'💪', color:'#E63946', exercises:[
+      {id:'mon_1',name:'Barbell Bench Press',sets:4,reps:'8–10',rest:'90s',muscle:'Chest'},
+      {id:'mon_2',name:'Incline Dumbbell Press',sets:3,reps:'10–12',rest:'75s',muscle:'Upper Chest'},
+      {id:'mon_3',name:'Cable Chest Flyes',sets:3,reps:'12–15',rest:'60s',muscle:'Chest'},
+      {id:'mon_4',name:'Dips (Chest Variation)',sets:3,reps:'10–12',rest:'75s',muscle:'Chest/Triceps'},
+      {id:'mon_5',name:'Tricep Pushdown (Rope)',sets:3,reps:'12–15',rest:'60s',muscle:'Triceps'},
+      {id:'mon_6',name:'Overhead Tricep Extension',sets:3,reps:'10–12',rest:'60s',muscle:'Triceps'},
+    ]},
+    Tuesday: { label:'BACK + BICEPS', icon:'🏋️', color:'#2EC4B6', exercises:[
+      {id:'tue_1',name:'Deadlift',sets:4,reps:'5–6',rest:'120s',muscle:'Back/Hamstrings'},
+      {id:'tue_2',name:'Pull-Ups / Lat Pulldown',sets:4,reps:'8–10',rest:'90s',muscle:'Lats'},
+      {id:'tue_3',name:'Barbell Bent-Over Row',sets:3,reps:'8–10',rest:'90s',muscle:'Mid-Back'},
+      {id:'tue_4',name:'Seated Cable Row',sets:3,reps:'12–15',rest:'60s',muscle:'Mid-Back'},
+      {id:'tue_5',name:'Barbell Curl',sets:3,reps:'10–12',rest:'60s',muscle:'Biceps'},
+      {id:'tue_6',name:'Hammer Curl',sets:3,reps:'12–15',rest:'60s',muscle:'Biceps/Brachialis'},
+    ]},
+    Wednesday: { label:'LEGS', icon:'🦵', color:'#F4A261', exercises:[
+      {id:'wed_1',name:'Barbell Back Squat',sets:4,reps:'6–8',rest:'120s',muscle:'Quads/Glutes'},
+      {id:'wed_2',name:'Romanian Deadlift',sets:3,reps:'10–12',rest:'90s',muscle:'Hamstrings'},
+      {id:'wed_3',name:'Leg Press',sets:3,reps:'12–15',rest:'75s',muscle:'Quads'},
+      {id:'wed_4',name:'Walking Lunges',sets:3,reps:'12 each',rest:'75s',muscle:'Quads/Glutes'},
+      {id:'wed_5',name:'Leg Curl (Machine)',sets:3,reps:'12–15',rest:'60s',muscle:'Hamstrings'},
+      {id:'wed_6',name:'Standing Calf Raises',sets:4,reps:'15–20',rest:'45s',muscle:'Calves'},
+    ]},
+    Thursday: { label:'REST / ACTIVE RECOVERY', icon:'🧘', color:'#6A4C93', isRest:true, exercises:[
+      {id:'thu_1',name:'20 min Light Cardio / Walk',sets:1,reps:'20 min',rest:'—',muscle:'Cardio'},
+      {id:'thu_2',name:'Full Body Stretching',sets:1,reps:'15 min',rest:'—',muscle:'Flexibility'},
+      {id:'thu_3',name:'Foam Rolling',sets:1,reps:'10 min',rest:'—',muscle:'Recovery'},
+    ]},
+    Friday: { label:'SHOULDERS + ABS', icon:'🎯', color:'#FF6B6B', exercises:[
+      {id:'fri_1',name:'Overhead Press (Barbell)',sets:4,reps:'8–10',rest:'90s',muscle:'Shoulders'},
+      {id:'fri_2',name:'Lateral Raises',sets:3,reps:'12–15',rest:'60s',muscle:'Side Delts'},
+      {id:'fri_3',name:'Front Raises',sets:3,reps:'12–15',rest:'60s',muscle:'Front Delts'},
+      {id:'fri_4',name:'Face Pulls (Cable)',sets:3,reps:'15–20',rest:'60s',muscle:'Rear Delts'},
+      {id:'fri_5',name:'Hanging Leg Raises',sets:3,reps:'12–15',rest:'60s',muscle:'Core'},
+      {id:'fri_6',name:'Cable Crunches',sets:3,reps:'15–20',rest:'45s',muscle:'Abs'},
+    ]},
+    Saturday: { label:'FULL BODY POWER', icon:'⚡', color:'#FFD166', exercises:[
+      {id:'sat_1',name:'Power Clean',sets:4,reps:'5',rest:'120s',muscle:'Full Body'},
+      {id:'sat_2',name:'Weighted Pull-Ups',sets:3,reps:'6–8',rest:'90s',muscle:'Back/Biceps'},
+      {id:'sat_3',name:'Dumbbell Shoulder Press',sets:3,reps:'10–12',rest:'75s',muscle:'Shoulders'},
+      {id:'sat_4',name:'Bulgarian Split Squat',sets:3,reps:'10 each',rest:'75s',muscle:'Legs'},
+      {id:'sat_5',name:'Plank Variations',sets:3,reps:'45–60s',rest:'45s',muscle:'Core'},
+      {id:'sat_6',name:'Battle Ropes',sets:3,reps:'30s',rest:'45s',muscle:'Conditioning'},
+    ]},
+    Sunday: { label:'REST DAY', icon:'🌙', color:'#4A4E69', isRest:true, exercises:[
+      {id:'sun_1',name:'Full Rest & Recovery',sets:1,reps:'All day',rest:'—',muscle:'Body'},
+      {id:'sun_2',name:'Meal Prep',sets:1,reps:'1–2 hr',rest:'—',muscle:'Nutrition'},
+      {id:'sun_3',name:'Sleep 8+ Hours',sets:1,reps:'8 hrs',rest:'—',muscle:'Recovery'},
+    ]}
+  };
+}
+
+async function init() {
+  await fetchSchedule();
+  await fetchProgress();
+  renderAll();
+}
+init();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(() => console.log('ETEJ SW registered'))
+      .catch(err => console.log('SW error:', err));
+  });
+}
+
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  setTimeout(() => { if (deferredPrompt) showInstallBanner(); }, 3000);
+});
+
+function showInstallBanner() {
+  const banner = document.createElement('div');
+  banner.id = 'installBanner';
+  banner.style.cssText = `position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#18181E;border:1px solid rgba(230,57,70,0.35);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,0.5);font-family:'Barlow',sans-serif;max-width:320px;width:90%;`;
+  banner.innerHTML = `<div style="font-size:24px">💪</div><div style="flex:1"><div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:#F0EEF8">ADD TO HOME SCREEN</div><div style="font-size:11px;color:#7B7A90;margin-top:1px">Install ETEJ as an app</div></div><button onclick="installApp()" style="background:#E63946;border:none;border-radius:7px;color:white;padding:7px 14px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase">Install</button><button onclick="document.getElementById('installBanner').remove()" style="background:none;border:none;color:#4A4960;cursor:pointer;font-size:18px;padding:0 4px">×</button>`;
+  document.body.appendChild(banner);
+}
+
+async function installApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner')?.remove();
+  if (outcome === 'accepted') showToast('✓ ETEJ installed!');
+}
+</script>
+</body>
+</html>
