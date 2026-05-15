@@ -524,11 +524,25 @@ function showToast(msg) {
 
 async function fetchSchedule() {
   try {
-    const r = await fetch(`${API}/schedule`);
+    const r = await fetch('https://etej-workout.onrender.com/api/schedule');
+    if (!r.ok) throw new Error('bad response');
     schedule = await r.json();
-  } catch {
+  } catch(e) {
+    console.error('fetchSchedule error:', e);
     schedule = getFallbackSchedule();
     showToast('⚠ Backend offline — using local mode');
+  }
+}
+
+async function fetchProgress() {
+  try {
+    const r = await fetch('https://etej-workout.onrender.com/api/progress');
+    if (!r.ok) throw new Error('bad response');
+    progress = await r.json();
+  } catch(e) {
+    console.error('fetchProgress error:', e);
+    const stored = localStorage.getItem('etej_progress');
+    progress = stored ? JSON.parse(stored) : {};
   }
 }
 
